@@ -19,13 +19,13 @@ const defaultOptions = {
 const keydown$ = fromEvent(document, 'keydown');
 const keyup$ = fromEvent(document, 'keyup');
 
-const filterKey = (observable: Observable<KeyboardEvent>) => (key: string) =>
+const specifyKeyEvent = (observable: Observable<KeyboardEvent>) => (key: string) =>
   observable.pipe(
     filter((e: KeyboardEvent) => e.key.toLowerCase() === key.toLowerCase()),
     tap((e) => defaultOptions.preventDefault && e.preventDefault())
   );
 
-const [keyDownByKey, keyUpByKey] = [keydown$, keyup$].map(filterKey);
+const [keydown$ForKey, keyup$ForKey] = [keydown$, keyup$].map(specifyKeyEvent);
 
 export class Shortcutter {
   private _shortcuts: (Shortcut & { subscrition: Subscription })[] = [];
@@ -33,7 +33,7 @@ export class Shortcutter {
 
   public on(keys: string[], cb: { (): void }) {
     const subscrition = combineLatest(
-      keys.map((key) => merge(keyDownByKey(key).pipe(mapTo(true)), keyUpByKey(key).pipe(mapTo(false))))
+      keys.map((key) => merge(keydown$ForKey(key).pipe(mapTo(true)), keyup$ForKey(key).pipe(mapTo(false))))
     )
       .pipe(
         pairwise(),
