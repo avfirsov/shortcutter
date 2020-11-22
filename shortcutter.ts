@@ -22,36 +22,25 @@ const shortcuts: Shortcut[] = [
   },
 ];
 
-const keydown$ = fromEvent(document, 'keydown').pipe(share());
-const keyup$ = fromEvent(document, 'keyup').pipe(share());
+// const hotkeys = (
+//   shortcuts: Shortcut[],
+//   preventSeries = false,
+//   [keydown$, keyup$] = ['keydown', 'keyup'].map((event: string) => fromEvent(document, event).pipe(share())),
+//   [keydown$ForKey, keyup$ForKey] = [keydown$, keyup$].map((observable: Observable<KeyboardEvent>) => (key: string) =>
+//     observable.pipe(filter((e: KeyboardEvent) => e.key.toLowerCase() === key.toLowerCase()))
+//   ),
+//   keyState$ForKey = (key: string) => merge(keydown$ForKey(key).pipe(mapTo(true)), keyup$ForKey(key).pipe(mapTo(false)))
+// ) =>
+//   shortcuts.forEach(({ keys, cb }) =>
+//     combineLatest(keys.map(keyState$ForKey))
+//       .pipe(
+//         distinctUntilChanged((prev, cur) => preventSeries && JSON.stringify(prev) === JSON.stringify(cur)),
+//         filter((keysState) => keysState.every(Boolean))
+//       )
+//       .subscribe(cb)
+//   );
 
-// const keydown$ForKey = (key: string) =>
-//   //convert all to lower case because when shift is holded letter becomes uppercase in e.key
-//   keydown$.pipe(filter((e: KeyboardEvent) => e.key.toLowerCase() === key.toLowerCase()));
-// const keyup$ForKey = (key: string) =>
-//   keyup$.pipe(filter((e: KeyboardEvent) => e.key.toLowerCase() === key.toLowerCase()));
+//prettier-ignore
+const hotkeys = (shortcuts: Shortcut[], preventSeries = false, [keydown$, keyup$] = ['keydown', 'keyup'].map((event: string) => fromEvent(document, event).pipe(share())), [keydown$ForKey, keyup$ForKey] = [keydown$, keyup$].map((observable: Observable<KeyboardEvent>) => (key: string) => observable.pipe(filter((e: KeyboardEvent) => e.key.toLowerCase() === key.toLowerCase()))), keyState$ForKey = (key: string) => merge(keydown$ForKey(key).pipe(mapTo(true)), keyup$ForKey(key).pipe(mapTo(false)))) => shortcuts.forEach(({ keys, cb }) => combineLatest(keys.map(keyState$ForKey)).pipe( distinctUntilChanged((prev, cur) => preventSeries && JSON.stringify(prev) === JSON.stringify(cur)), filter((keysState) => keysState.every(Boolean))).subscribe(cb));
 
-const specifyKeyEvent = (observable: Observable<KeyboardEvent>) => (key: string) =>
-  observable.pipe(filter((e: KeyboardEvent) => e.key.toLowerCase() === key.toLowerCase()));
-
-const [keydown$ForKey, keyup$ForKey] = [keydown$, keyup$].map(specifyKeyEvent);
-
-const keyState$ForKey = (key: string) =>
-  merge(keydown$ForKey(key).pipe(mapTo(true)), keyup$ForKey(key).pipe(mapTo(false)));
-
-const keysState$FromKeys = (keys: string[]) => combineLatest(keys.map(keyState$ForKey));
-
-// keysState$FromKeys(['Shift', 'r', 'x']).subscribe(console.log);
-
-const hotkeys = (shortcuts: Shortcut[], preventSeries = false) =>
-  shortcuts.forEach(({ keys, cb }) =>
-    keysState$FromKeys(keys)
-      .pipe(
-        //here we JSON.stringify to compare arrays equality by content
-        distinctUntilChanged((prev, cur) => preventSeries && JSON.stringify(prev) === JSON.stringify(cur)),
-        filter((keysState) => keysState.every(Boolean))
-      )
-      .subscribe(cb)
-  );
-
-// hotkeys(shortcuts, false)
+hotkeys(shortcuts, true);
