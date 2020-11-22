@@ -1,5 +1,5 @@
 import { combineLatest, fromEvent, Observable, Subscription, merge } from 'rxjs';
-import { filter, map, mapTo, pairwise, tap } from 'rxjs/operators';
+import { distinctUntilChanged, filter, mapTo, tap } from 'rxjs/operators';
 
 type Shortcut = {
   keys: string[];
@@ -36,10 +36,8 @@ export class Shortcutter {
       keys.map((key) => merge(keydown$ForKey(key).pipe(mapTo(true)), keyup$ForKey(key).pipe(mapTo(false))))
     )
       .pipe(
-        pairwise(),
         //предотвращаем залипание
-        filter(([prevState, curState]) => !this.options.preventSeries || prevState.some((p, i) => p !== curState[i])),
-        map(([_, curState]) => curState),
+        distinctUntilChanged((prev, cur) => this.options.preventSeries && JSON.stringify(prev) === JSON.stringify(cur)),
         filter((keysState) => keysState.every(Boolean))
       )
       .subscribe(cb);
