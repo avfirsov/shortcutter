@@ -1,7 +1,12 @@
-import { combineLatest, fromEvent, Observable, Subscription, merge } from 'rxjs';
-import { distinctUntilChanged, filter, map, mapTo, pairwise, tap } from 'rxjs/operators';
+import { combineLatest, fromEvent, Observable, merge } from 'rxjs';
+import { distinctUntilChanged, filter, mapTo, share } from 'rxjs/operators';
 
-const shortcuts = [
+type Shortcut = {
+  keys: string[];
+  cb: { (): void };
+};
+
+const shortcuts: Shortcut[] = [
   {
     keys: ['Shift', 'r', 'x'], //something, that will be displayed in e.key
     cb: () => {
@@ -17,8 +22,8 @@ const shortcuts = [
   },
 ];
 
-const keydown$ = fromEvent(document, 'keydown');
-const keyup$ = fromEvent(document, 'keyup');
+const keydown$ = fromEvent(document, 'keydown').pipe(share());
+const keyup$ = fromEvent(document, 'keyup').pipe(share());
 
 // const keydown$ForKey = (key: string) =>
 //   //convert all to lower case because when shift is holded letter becomes uppercase in e.key
@@ -38,16 +43,15 @@ const keysState$FromKeys = (keys: string[]) => combineLatest(keys.map(keyState$F
 
 // keysState$FromKeys(['Shift', 'r', 'x']).subscribe(console.log);
 
-type Shortcut = {
-  keys: string[];
-  cb: { (): void };
-};
-
-const hotkeys = (shortcuts: Shortcut[]) =>
+const hotkeys = (shortcuts: Shortcut[], preventSeries = false) =>
   shortcuts.forEach(({ keys, cb }) =>
     keysState$FromKeys(keys)
       .pipe(
+        //here we JSON.stringify to compare arrays equality by content
+        distinctUntilChanged((prev, cur) => preventSeries && JSON.stringify(prev) === JSON.stringify(cur)),
         filter((keysState) => keysState.every(Boolean))
       )
       .subscribe(cb)
   );
+
+// hotkeys(shortcuts, false)
