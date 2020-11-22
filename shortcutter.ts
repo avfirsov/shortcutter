@@ -1,5 +1,5 @@
 import { combineLatest, fromEvent, Observable, Subscription, merge } from 'rxjs';
-import { distinctUntilChanged, filter, mapTo, tap } from 'rxjs/operators';
+import { distinctUntilChanged, filter, mapTo, share, tap } from 'rxjs/operators';
 
 type Shortcut = {
   keys: string[];
@@ -16,8 +16,8 @@ const defaultOptions = {
   preventSeries: false,
 };
 
-const keydown$ = fromEvent(document, 'keydown');
-const keyup$ = fromEvent(document, 'keyup');
+const keydown$ = fromEvent(document, 'keydown').pipe(share());
+const keyup$ = fromEvent(document, 'keyup').pipe(share());
 
 const specifyKeyEvent = (observable: Observable<KeyboardEvent>) => (key: string) =>
   observable.pipe(
